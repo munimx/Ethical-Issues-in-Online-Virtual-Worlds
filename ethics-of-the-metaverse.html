@@ -1,0 +1,2573 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ethical Issues in Online Virtual Worlds</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #07080b;
+        --bg-soft: #0c1016;
+        --ink: #fbfaf4;
+        --ink-2: #e3e0d6;
+        --muted: #bab5a8;
+        --line: rgba(251, 250, 244, 0.24);
+        --line-strong: rgba(251, 250, 244, 0.44);
+        --accent: #46e3ff;
+        --accent-2: #ffd166;
+        --danger: #ff5a7a;
+        --good: #89f7b0;
+        --pad-x: clamp(58px, 6.2vw, 96px);
+        --pad-y: clamp(58px, 7.4vh, 78px);
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: 'IBM Plex Sans', sans-serif;
+        letter-spacing: 0;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      body {
+        min-width: 320px;
+      }
+
+      .environment {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        background:
+          radial-gradient(
+            circle at 8% 18%,
+            color-mix(in srgb, var(--accent) 16%, transparent),
+            transparent 34%
+          ),
+          linear-gradient(115deg, #06070a 0%, #10151c 54%, #06070a 100%);
+        transition: background 520ms ease;
+        pointer-events: none;
+      }
+
+      .environment::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(251, 250, 244, 0.04) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            rgba(251, 250, 244, 0.035) 1px,
+            transparent 1px
+          );
+        background-size: 56px 56px;
+        mask-image: linear-gradient(
+          90deg,
+          transparent 0%,
+          black 9%,
+          black 91%,
+          transparent 100%
+        );
+        opacity: 0.44;
+      }
+
+      .environment::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.03),
+          transparent 38%,
+          rgba(0, 0, 0, 0.22)
+        );
+        opacity: 0.8;
+      }
+
+      #threadCanvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0.48;
+        transition: opacity 520ms ease;
+      }
+
+      body[data-finale='true'] #threadCanvas {
+        opacity: 0.82;
+      }
+
+      body[data-finale='true'] .environment::before {
+        opacity: 0.26;
+      }
+
+      .deck {
+        position: relative;
+        z-index: 1;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        isolation: isolate;
+      }
+
+      .topbar {
+        position: fixed;
+        z-index: 30;
+        inset: 0 0 auto 0;
+        height: 48px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 var(--pad-x);
+        color: var(--ink-2);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: linear-gradient(
+          180deg,
+          rgba(7, 8, 11, 0.8),
+          rgba(7, 8, 11, 0)
+        );
+        pointer-events: none;
+      }
+
+      .counter {
+        display: inline-grid;
+        place-items: center;
+        min-width: 86px;
+        height: 30px;
+        overflow: hidden;
+        color: var(--ink);
+      }
+
+      .counter span {
+        display: inline-block;
+      }
+
+      .counter.flip span {
+        animation: counterFlip 280ms var(--ease) both;
+      }
+
+      .progress {
+        position: fixed;
+        z-index: 31;
+        inset: auto var(--pad-x) 30px var(--pad-x);
+        display: grid;
+        grid-template-columns: repeat(var(--slide-count, 20), 1fr);
+        gap: 8px;
+        pointer-events: auto;
+      }
+
+      .progress button {
+        height: 9px;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(251, 250, 244, 0.18);
+        cursor: pointer;
+        transition:
+          transform 180ms ease,
+          background 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      .progress button.done {
+        background: color-mix(in srgb, var(--accent) 72%, var(--ink) 8%);
+      }
+
+      .progress button.active {
+        transform: scaleY(1.75);
+        background: var(--accent-2);
+        box-shadow: 0 0 22px
+          color-mix(in srgb, var(--accent-2) 65%, transparent);
+      }
+
+      .nav {
+        position: fixed;
+        z-index: 32;
+        top: 50%;
+        width: 44px;
+        height: 44px;
+        border: 1px solid rgba(251, 250, 244, 0.14);
+        border-radius: 50%;
+        background: rgba(7, 8, 11, 0.08);
+        color: rgba(251, 250, 244, 0.58);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 19px;
+        cursor: pointer;
+        opacity: 0.18;
+        transform: translateY(-50%);
+        transition:
+          opacity 180ms ease,
+          transform 120ms ease,
+          background 180ms ease,
+          border-color 180ms ease;
+        backdrop-filter: blur(8px);
+      }
+
+      .nav:hover {
+        opacity: 0.58;
+        background: color-mix(in srgb, var(--accent) 8%, rgba(7, 8, 11, 0.18));
+        border-color: color-mix(
+          in srgb,
+          var(--accent) 36%,
+          rgba(251, 250, 244, 0.14)
+        );
+      }
+
+      .nav:active {
+        transform: translateY(-50%) scale(0.94);
+      }
+
+      .nav:disabled {
+        opacity: 0.04;
+        cursor: default;
+      }
+
+      .nav-prev {
+        left: 18px;
+      }
+
+      .nav-next {
+        right: 18px;
+      }
+
+      .slides {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        perspective: 1200px;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        grid-template-rows: 1fr auto;
+        min-height: 100%;
+        padding: var(--pad-y) var(--pad-x) 70px;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate3d(42px, 0, 0);
+        transition:
+          opacity 420ms ease,
+          transform 560ms var(--ease);
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate3d(0, 0, 0);
+      }
+
+      .slide.reverse-start {
+        transform: translate3d(-42px, 0, 0);
+      }
+
+      .slide.exiting {
+        opacity: 0;
+        transform: translate3d(0, -14px, 0);
+        transition-duration: 260ms;
+      }
+
+      .slide-inner {
+        align-self: center;
+        width: min(1140px, 100%);
+        margin: 0 auto;
+      }
+
+      .footer {
+        position: absolute;
+        right: var(--pad-x);
+        bottom: 52px;
+        color: var(--ink-2);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .label {
+        color: var(--accent);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: clamp(14px, 1.18vw, 17px);
+        font-weight: 600;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1,
+      h2,
+      h3 {
+        text-wrap: balance;
+      }
+
+      h1 {
+        max-width: 1040px;
+        margin-top: 18px;
+        color: var(--ink);
+        font-family: 'Fraunces', serif;
+        font-size: clamp(70px, 9vw, 130px);
+        font-weight: 650;
+        line-height: 0.9;
+        letter-spacing: -0.025em;
+      }
+
+      h2 {
+        max-width: 1080px;
+        margin-top: 12px;
+        color: var(--ink);
+        font-family: 'Fraunces', serif;
+        font-size: clamp(54px, 6vw, 84px);
+        font-weight: 650;
+        line-height: 0.95;
+        letter-spacing: -0.022em;
+      }
+
+      h3 {
+        color: var(--ink);
+        font-size: clamp(23px, 2vw, 31px);
+        font-weight: 700;
+        line-height: 1.12;
+      }
+
+      .lead {
+        max-width: 900px;
+        margin-top: 24px;
+        color: var(--ink-2);
+        font-size: clamp(24px, 2.25vw, 34px);
+        line-height: 1.24;
+      }
+
+      .small-lead {
+        max-width: 820px;
+        margin-top: 20px;
+        color: var(--ink-2);
+        font-size: clamp(21px, 1.9vw, 28px);
+        line-height: 1.32;
+      }
+
+      .title-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 300px;
+        gap: clamp(36px, 7vw, 92px);
+        align-items: end;
+      }
+
+      .slide[data-slide='1'] .title-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .big-index {
+        color: transparent;
+        font-family: 'Fraunces', serif;
+        font-size: clamp(172px, 18vw, 265px);
+        font-weight: 650;
+        line-height: 0.78;
+        -webkit-text-stroke: 2px var(--accent);
+        opacity: 0.95;
+      }
+
+      .member-list {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 44px;
+        padding-top: 22px;
+        border-top: 2px solid var(--line-strong);
+      }
+
+      .member-list span {
+        color: var(--ink);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 28px;
+        margin-top: 40px;
+        color: var(--muted);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .chapter-grid {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        gap: clamp(42px, 7vw, 100px);
+        align-items: center;
+      }
+
+      .chapter-title {
+        color: var(--ink);
+        font-family: 'Fraunces', serif;
+        font-size: clamp(64px, 7.4vw, 108px);
+        font-weight: 650;
+        line-height: 0.91;
+        letter-spacing: -0.025em;
+      }
+
+      .chapter-points {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 22px;
+        margin-top: 40px;
+        padding-top: 28px;
+        border-top: 2px solid var(--line);
+      }
+
+      .chapter-points b {
+        display: block;
+        color: var(--accent);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 15px;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      .chapter-points span {
+        display: block;
+        margin-top: 10px;
+        color: var(--ink-2);
+        font-size: 21px;
+        line-height: 1.28;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(330px, 0.82fr);
+        gap: clamp(42px, 5.5vw, 78px);
+        align-items: start;
+        margin-top: clamp(34px, 5vh, 54px);
+      }
+
+      .two-col.equal {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .two-col.wide-left {
+        grid-template-columns: minmax(0, 1.12fr) minmax(320px, 0.88fr);
+      }
+
+      ul {
+        display: grid;
+        gap: 17px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      li {
+        position: relative;
+        padding-left: 32px;
+        color: var(--ink-2);
+        font-size: clamp(21px, 1.85vw, 27px);
+        line-height: 1.28;
+      }
+
+      li::before {
+        content: '';
+        position: absolute;
+        top: 0.68em;
+        left: 0;
+        width: 16px;
+        height: 4px;
+        background: var(--accent);
+        border-radius: 999px;
+        box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 70%, transparent);
+      }
+
+      strong {
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .quote {
+        position: relative;
+        padding-left: 32px;
+        border-left: 5px solid var(--accent);
+        color: var(--ink);
+        font-family: 'Fraunces', serif;
+        font-size: clamp(34px, 3.4vw, 51px);
+        font-weight: 500;
+        line-height: 1.04;
+      }
+
+      .statline {
+        display: grid;
+        gap: 22px;
+        padding-top: 12px;
+        border-top: 2px solid var(--line-strong);
+      }
+
+      .stat-value {
+        color: var(--accent-2);
+        font-family: 'Fraunces', serif;
+        font-size: clamp(72px, 8vw, 118px);
+        font-weight: 650;
+        line-height: 0.82;
+        letter-spacing: -0.04em;
+        text-shadow: 0 0 32px
+          color-mix(in srgb, var(--accent-2) 34%, transparent);
+      }
+
+      .stat-copy {
+        color: var(--ink-2);
+        font-size: clamp(22px, 1.9vw, 29px);
+        line-height: 1.24;
+      }
+
+      .evidence-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+        margin-top: 34px;
+        padding-top: 24px;
+        border-top: 2px solid var(--line);
+      }
+
+      .evidence-row div {
+        min-height: 110px;
+      }
+
+      .evidence-row b,
+      .open-cols b,
+      .process b,
+      .timeline b {
+        display: block;
+        color: var(--accent);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      .evidence-row span,
+      .open-cols span,
+      .process span,
+      .timeline span {
+        display: block;
+        margin-top: 10px;
+        color: var(--ink-2);
+        font-size: 21px;
+        line-height: 1.28;
+      }
+
+      .open-cols {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+        margin-top: 42px;
+        border-top: 2px solid var(--line-strong);
+        border-bottom: 2px solid var(--line-strong);
+      }
+
+      .open-cols > div {
+        min-height: 285px;
+        padding: 28px 25px;
+        border-right: 2px solid var(--line);
+      }
+
+      .open-cols > div:last-child {
+        border-right: 0;
+      }
+
+      .open-cols.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .open-cols.five {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .open-cols.five > div {
+        min-height: 300px;
+        padding: 24px 18px;
+      }
+
+      .open-cols.five h3 {
+        font-size: clamp(20px, 1.55vw, 25px);
+      }
+
+      .open-cols.five span,
+      .open-cols.three span {
+        font-size: 20px;
+      }
+
+      .open-cols .num {
+        display: block;
+        margin-bottom: 34px;
+        color: var(--accent-2);
+        font-family: 'Fraunces', serif;
+        font-size: 52px;
+        line-height: 0.8;
+      }
+
+      .open-cols h3 {
+        margin-bottom: 16px;
+        font-size: clamp(23px, 1.9vw, 29px);
+        text-transform: uppercase;
+      }
+
+      .process {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0;
+        margin-top: 28px;
+        border-top: 2px solid var(--line);
+        border-bottom: 2px solid var(--line);
+      }
+
+      .process div {
+        min-height: 148px;
+        padding: 22px;
+        border-right: 2px solid var(--line);
+      }
+
+      .process div:last-child {
+        border-right: 0;
+      }
+
+      .split-open {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: clamp(44px, 6vw, 82px);
+        margin-top: 42px;
+      }
+
+      .split-open > div {
+        padding-top: 24px;
+        border-top: 2px solid var(--line-strong);
+      }
+
+      .split-open h3 {
+        margin-bottom: 22px;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 0;
+        border-top: 2px solid var(--line-strong);
+        border-bottom: 2px solid var(--line-strong);
+      }
+
+      .timeline div {
+        display: grid;
+        grid-template-columns: 120px minmax(0, 1fr);
+        gap: 26px;
+        padding: 18px 0;
+        border-bottom: 2px solid var(--line);
+      }
+
+      .timeline div:last-child {
+        border-bottom: 0;
+      }
+
+      .timeline b {
+        color: var(--accent-2);
+        font-size: 18px;
+      }
+
+      .timeline span {
+        margin-top: 0;
+        font-size: 22px;
+      }
+
+      .bar-system {
+        padding-top: 8px;
+        border-top: 2px solid var(--line-strong);
+      }
+
+      .bar-label {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 24px;
+        color: var(--ink);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .bar {
+        height: 24px;
+        margin-top: 12px;
+        background: rgba(251, 250, 244, 0.16);
+        overflow: hidden;
+      }
+
+      .bar span {
+        display: block;
+        width: var(--w);
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--danger));
+        transform: scaleX(0);
+        transform-origin: left;
+      }
+
+      .slide.active .bar span {
+        animation: growBar 950ms var(--ease) 420ms both;
+      }
+
+      .legal-table {
+        display: grid;
+        grid-template-columns: 0.75fr 1fr 1fr;
+        gap: 0;
+        margin-top: 36px;
+        border-top: 2px solid var(--line-strong);
+        border-bottom: 2px solid var(--line-strong);
+      }
+
+      .legal-table div {
+        min-height: 82px;
+        padding: 18px 16px;
+        border-right: 2px solid var(--line);
+        border-bottom: 2px solid var(--line);
+        color: var(--ink-2);
+        font-size: 20px;
+        line-height: 1.25;
+      }
+
+      .legal-table div:nth-child(3n) {
+        border-right: 0;
+      }
+
+      .legal-table div:nth-last-child(-n + 3) {
+        border-bottom: 0;
+      }
+
+      .legal-table .head {
+        min-height: 54px;
+        color: var(--accent);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      .recommendations {
+        display: grid;
+        gap: 0;
+        margin-top: 34px;
+        border-top: 2px solid var(--line-strong);
+        border-bottom: 2px solid var(--line-strong);
+      }
+
+      .recommendations div {
+        display: grid;
+        grid-template-columns: 100px minmax(0, 1fr);
+        gap: 28px;
+        padding: 22px 0;
+        border-bottom: 2px solid var(--line);
+      }
+
+      .recommendations div:last-child {
+        border-bottom: 0;
+      }
+
+      .recommendations b {
+        color: var(--accent-2);
+        font-family: 'Fraunces', serif;
+        font-size: 48px;
+        line-height: 0.9;
+      }
+
+      .recommendations h3 {
+        margin-bottom: 8px;
+        font-size: 26px;
+        text-transform: uppercase;
+      }
+
+      .recommendations p {
+        color: var(--ink-2);
+        font-size: 21px;
+        line-height: 1.28;
+      }
+
+      .closing {
+        max-width: 940px;
+        margin: 28px auto 0;
+        color: var(--ink);
+        font-family: 'Fraunces', serif;
+        font-size: clamp(34px, 3.5vw, 51px);
+        font-weight: 500;
+        line-height: 1.04;
+        text-align: center;
+      }
+
+      .thank-slide {
+        text-align: center;
+      }
+
+      .thank-slide .slide-inner {
+        width: min(1060px, 100%);
+        isolation: isolate;
+      }
+
+      .thank-slide .label {
+        color: var(--ink-2);
+      }
+
+      .thank-you {
+        color: var(--ink);
+        font-family: 'Fraunces', serif;
+        font-size: clamp(92px, 12vw, 180px);
+        font-weight: 650;
+        line-height: 0.86;
+        letter-spacing: -0.045em;
+        text-shadow:
+          0 0 34px color-mix(in srgb, var(--accent) 34%, transparent),
+          0 0 80px rgba(251, 250, 244, 0.08);
+      }
+
+      .thank-copy {
+        max-width: 760px;
+        margin: 34px auto 0;
+        color: var(--ink);
+        font-size: clamp(25px, 2.4vw, 36px);
+        font-weight: 600;
+        line-height: 1.24;
+      }
+
+      .thank-meta {
+        display: flex;
+        justify-content: center;
+        gap: 28px;
+        margin-top: 38px;
+        color: var(--accent);
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      .slide.active .reveal {
+        animation: reveal 560ms var(--ease) both;
+        animation-delay: var(--delay, 0ms);
+      }
+
+      .wipe {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .wipe::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          color-mix(in srgb, var(--accent) 42%, transparent),
+          transparent
+        );
+        transform: translateX(-110%);
+      }
+
+      .slide.active .wipe::after {
+        animation: wipe 900ms ease-out 180ms both;
+      }
+
+      .slide[data-slide='3'] .two-col {
+        margin-top: 28px;
+      }
+
+      .slide[data-slide='3'] .evidence-row {
+        margin: 18px 0 0;
+        padding: 13px 0;
+        gap: 22px;
+        border-top: 2px solid var(--line);
+        border-bottom: 2px solid var(--line);
+      }
+
+      .slide[data-slide='3'] .evidence-row div {
+        min-height: 0;
+      }
+
+      .slide[data-slide='3'] .evidence-row b {
+        font-size: 13px;
+      }
+
+      .slide[data-slide='3'] .evidence-row span {
+        margin-top: 6px;
+        font-size: 17px;
+        line-height: 1.18;
+      }
+
+      .slide[data-slide='3'] .quote {
+        font-size: clamp(31px, 3vw, 45px);
+      }
+
+      .slide[data-slide='3'] ul {
+        gap: 13px;
+      }
+
+      .slide[data-slide='3'] li {
+        font-size: clamp(20px, 1.72vw, 25px);
+        line-height: 1.23;
+      }
+
+      .slide[data-slide='19'] .recommendations div {
+        padding: 18px 0;
+      }
+
+      .slide[data-slide='19'] .recommendations p {
+        font-size: 20px;
+        line-height: 1.24;
+      }
+
+      .slide[data-slide='19'] .closing {
+        margin-top: 18px;
+        font-size: clamp(31px, 3.05vw, 44px);
+      }
+
+      @keyframes reveal {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes wipe {
+        0% {
+          opacity: 1;
+          transform: translateX(-110%);
+        }
+        82% {
+          opacity: 0.75;
+        }
+        100% {
+          opacity: 0;
+          transform: translateX(110%);
+        }
+      }
+
+      @keyframes counterFlip {
+        from {
+          opacity: 0;
+          transform: translateY(9px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes growBar {
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      @media (max-width: 980px) {
+        :root {
+          --pad-x: clamp(28px, 7vw, 46px);
+          --pad-y: 66px;
+        }
+
+        body {
+          overflow: auto;
+        }
+
+        .deck,
+        .slides {
+          min-height: 100svh;
+        }
+
+        .slide {
+          min-height: 100svh;
+          padding-bottom: 86px;
+          overflow-y: auto;
+          transform: none;
+        }
+
+        .slide.active,
+        .slide.reverse-start,
+        .slide.exiting {
+          transform: none;
+        }
+
+        .title-layout,
+        .chapter-grid,
+        .two-col,
+        .two-col.equal,
+        .two-col.wide-left,
+        .chapter-points,
+        .evidence-row,
+        .open-cols,
+        .process,
+        .split-open,
+        .legal-table {
+          grid-template-columns: 1fr;
+        }
+
+        .open-cols > div,
+        .process div,
+        .legal-table div,
+        .legal-table div:nth-child(3n) {
+          border-right: 0;
+        }
+
+        .member-list {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .thank-meta {
+          flex-wrap: wrap;
+          gap: 14px 20px;
+        }
+
+        .big-index {
+          display: none;
+        }
+
+        .timeline div,
+        .recommendations div {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .progress {
+          gap: 4px;
+          bottom: 20px;
+        }
+
+        .progress button {
+          height: 8px;
+        }
+
+        .footer {
+          display: none;
+        }
+
+        .nav {
+          top: auto;
+          bottom: 24px;
+          width: 44px;
+          height: 44px;
+        }
+
+        .nav-prev {
+          left: 18px;
+        }
+
+        .nav-next {
+          right: 18px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.001ms !important;
+          scroll-behavior: auto !important;
+        }
+
+        .slide,
+        .slide.active,
+        .reveal,
+        .slide.active .reveal {
+          opacity: 1 !important;
+          transform: none !important;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          height: auto;
+          overflow: visible;
+          background: var(--bg);
+        }
+
+        .environment,
+        .topbar,
+        .nav,
+        .progress {
+          display: none !important;
+        }
+
+        .deck,
+        .slides {
+          height: auto;
+          overflow: visible;
+        }
+
+        .slide {
+          position: relative;
+          min-height: 100vh;
+          opacity: 1 !important;
+          transform: none !important;
+          page-break-after: always;
+          break-after: page;
+          background: #07080b;
+        }
+
+        .reveal {
+          opacity: 1 !important;
+          transform: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="environment" aria-hidden="true">
+      <canvas id="threadCanvas"></canvas>
+    </div>
+
+    <div class="deck">
+      <header class="topbar">
+        <div>Social networking ethics in online virtual worlds</div>
+        <div class="counter"><span id="counter">01 / 20</span></div>
+      </header>
+      <button
+        class="nav nav-prev"
+        id="prev"
+        type="button"
+        aria-label="Previous slide"
+      >
+        &lt;
+      </button>
+      <button
+        class="nav nav-next"
+        id="next"
+        type="button"
+        aria-label="Next slide"
+      >
+        &gt;
+      </button>
+      <nav class="progress" id="progress" aria-label="Slide navigation"></nav>
+
+      <main class="slides">
+        <section class="slide active" data-slide="1" data-theme="intro">
+          <div class="slide-inner">
+            <div class="title-layout">
+              <div>
+                <div class="label reveal">Academic group presentation</div>
+                <h1 class="reveal wipe" style="--delay: 80ms">
+                  Ethical Issues in Online Virtual Worlds
+                </h1>
+                <p class="lead reveal" style="--delay: 220ms">
+                  Social networking, identity, privacy, labor, and platform
+                  governance in embodied digital spaces.
+                </p>
+                <div class="member-list reveal" style="--delay: 360ms">
+                  <span>Munim Ahmad</span>
+                  <span>Fizza Shahid</span>
+                  <span>Harram Imran</span>
+                  <span>Kamran Saleem</span>
+                </div>
+                <div class="meta-row reveal" style="--delay: 480ms">
+                  <span>Course / Institution</span>
+                  <span>2026</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 1</div>
+        </section>
+
+        <section class="slide" data-slide="2" data-theme="intro">
+          <div class="slide-inner">
+            <div class="chapter-grid">
+              <div class="big-index reveal">I</div>
+              <div>
+                <div class="label reveal">Member 1 / Framing</div>
+                <div class="chapter-title reveal wipe" style="--delay: 100ms">
+                  Social life becomes spatial.
+                </div>
+                <p class="small-lead reveal" style="--delay: 240ms">
+                  Online virtual worlds turn social networking into embodied
+                  interaction: people do not just post, they appear, move,
+                  gesture, and feel present.
+                </p>
+                <div class="chapter-points reveal" style="--delay: 380ms">
+                  <div>
+                    <b>Identity</b><span>Profiles become avatars.</span>
+                  </div>
+                  <div>
+                    <b>Data</b><span>Clicks become gaze and motion.</span>
+                  </div>
+                  <div>
+                    <b>Harm</b><span>Virtual contact can feel real.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 1</div>
+        </section>
+
+        <section class="slide" data-slide="3" data-theme="intro">
+          <div class="slide-inner">
+            <div class="label reveal">The ontological shift</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              From social media feeds to social worlds
+            </h2>
+            <div class="evidence-row reveal" style="--delay: 220ms">
+              <div>
+                <b>Web 2.0</b><span>Posts, likes, photos, location.</span>
+              </div>
+              <div>
+                <b>Virtual worlds</b
+                ><span>Gaze, motion, embodiment, proximity.</span>
+              </div>
+              <div>
+                <b>Ethical shift</b
+                ><span
+                  >Social interaction becomes measurable and visceral.</span
+                >
+              </div>
+            </div>
+            <div class="two-col">
+              <ul>
+                <li class="reveal" style="--delay: 360ms">
+                  The metaverse moves networking from feeds into persistent,
+                  real-time, avatar-mediated spaces.
+                </li>
+                <li class="reveal" style="--delay: 450ms">
+                  Users socialize through bodies, proximity, voice, movement,
+                  and shared environments.
+                </li>
+                <li class="reveal" style="--delay: 540ms">
+                  These are not old internet problems with 3D graphics; the body
+                  is now part of the interface.
+                </li>
+              </ul>
+              <blockquote class="quote reveal" style="--delay: 680ms">
+                When virtual harm is felt by the body, "virtual" stops being a
+                defense.
+              </blockquote>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 1</div>
+        </section>
+
+        <section class="slide" data-slide="4" data-theme="intro">
+          <div class="slide-inner">
+            <div class="label reveal">Framework</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Five ethical domains in online virtual worlds
+            </h2>
+            <div class="open-cols five reveal" style="--delay: 260ms">
+              <div>
+                <span class="num">01</span>
+                <h3>Biometric privacy</h3>
+                <span
+                  >Headsets collect eye, motion, and spatial signals that can
+                  identify or profile users.</span
+                >
+              </div>
+              <div>
+                <span class="num">02</span>
+                <h3>Psychological impact</h3>
+                <span
+                  >Avatar embodiment can change behavior and intensify
+                  harassment or consent violations.</span
+                >
+              </div>
+              <div>
+                <span class="num">03</span>
+                <h3>Social interaction harms</h3>
+                <span
+                  >Spatial harassment, proximity abuse, and weak consent
+                  controls create psychological safety risks.</span
+                >
+              </div>
+              <div>
+                <span class="num">04</span>
+                <h3>Digital autonomy</h3>
+                <span
+                  >Avatar theft attacks self-expression, identity, and safe
+                  participation in social spaces.</span
+                >
+              </div>
+              <div>
+                <span class="num">05</span>
+                <h3>Economic exploitation</h3>
+                <span
+                  >Creator economies and virtual currencies can bypass labor and
+                  financial safeguards.</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 1</div>
+        </section>
+
+        <section class="slide" data-slide="5" data-theme="intro">
+          <div class="slide-inner">
+            <div class="label reveal">Biometric surveillance</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Your body becomes the login
+            </h2>
+            <div class="two-col wide-left">
+              <div>
+                <ul>
+                  <li class="reveal" style="--delay: 240ms">
+                    Eye tracking supports foveated rendering, but it also
+                    records involuntary attention patterns.
+                  </li>
+                  <li class="reveal" style="--delay: 330ms">
+                    Pupil dilation, fixation, and saccades can imply cognitive
+                    load, emotion, and health signals.
+                  </li>
+                  <li class="reveal" style="--delay: 420ms">
+                    A biometric pattern cannot be changed like a password after
+                    exposure.
+                  </li>
+                </ul>
+                <div class="process reveal" style="--delay: 560ms">
+                  <div><b>Capture</b><span>Eyes, motion, space.</span></div>
+                  <div><b>Infer</b><span>Attention, mood, intent.</span></div>
+                  <div>
+                    <b>Identify</b><span>Re-link anonymous users.</span>
+                  </div>
+                  <div><b>Monetize</b><span>Target and profile.</span></div>
+                </div>
+              </div>
+              <div class="statline reveal" style="--delay: 720ms">
+                <div class="stat-value">ID</div>
+                <p class="stat-copy">
+                  Eye-tracking research cited in the draft shows ordinary VR
+                  tasks can support unique re-identification.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 1</div>
+        </section>
+
+        <section class="slide" data-slide="6" data-theme="identity">
+          <div class="slide-inner">
+            <div class="chapter-grid">
+              <div class="big-index reveal">II</div>
+              <div>
+                <div class="label reveal">Member 2 / Mind, body, identity</div>
+                <div class="chapter-title reveal wipe" style="--delay: 100ms">
+                  The avatar changes the social self.
+                </div>
+                <p class="small-lead reveal" style="--delay: 240ms">
+                  In virtual worlds, the avatar is not decoration. It mediates
+                  behavior, touch, trust, and belonging.
+                </p>
+                <div class="chapter-points reveal" style="--delay: 380ms">
+                  <div>
+                    <b>Mind</b><span>Avatar traits shape behavior.</span>
+                  </div>
+                  <div>
+                    <b>Body</b><span>Simulated touch can create distress.</span>
+                  </div>
+                  <div>
+                    <b>Safety</b
+                    ><span
+                      >Spatial harassment can follow the user in real
+                      time.</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 2</div>
+        </section>
+
+        <section class="slide" data-slide="7" data-theme="identity">
+          <div class="slide-inner">
+            <div class="label reveal">Psychological phenomena</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              The mind follows the avatar
+            </h2>
+            <div class="open-cols three reveal" style="--delay: 240ms">
+              <div>
+                <span class="num">01</span>
+                <h3>The Proteus Effect</h3>
+                <span
+                  >Avatar traits can subconsciously shift behavior, confidence,
+                  negotiation style, and bias expression.</span
+                >
+              </div>
+              <div>
+                <span class="num">02</span>
+                <h3>Phantom Touch Illusion</h3>
+                <span
+                  >Users can report tingling, warmth, pressure, or pain when an
+                  avatar is touched.</span
+                >
+              </div>
+              <div>
+                <span class="num">03</span>
+                <h3>VR Dissociation</h3>
+                <span
+                  >Prolonged immersion can trigger depersonalization or
+                  derealization, changing risk assessment after headset
+                  removal.</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 2</div>
+        </section>
+
+        <section class="slide" data-slide="8" data-theme="identity">
+          <div class="slide-inner">
+            <div class="label reveal">Social interaction harms</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Harassment becomes spatial
+            </h2>
+            <div class="two-col wide-left">
+              <ul>
+                <li class="reveal" style="--delay: 240ms">
+                  In virtual worlds, harassment is not only text or voice. It
+                  can be proximity, swarming, cornering, and aggressive
+                  gestures.
+                </li>
+                <li class="reveal" style="--delay: 330ms">
+                  The updated draft cites the Horizon Worlds Exposed report,
+                  where researchers observed abuse during 100 visits to popular
+                  social spaces.
+                </li>
+                <li class="reveal" style="--delay: 420ms">
+                  Safety controls can fail when they mute speech but do not
+                  remove the harasser's visible avatar from shared space.
+                </li>
+              </ul>
+              <div class="statline reveal" style="--delay: 580ms">
+                <div class="stat-value">100</div>
+                <p class="stat-copy">
+                  Visits analyzed in the cited Horizon Worlds report,
+                  documenting racist, misogynistic, homophobic, and
+                  minor-directed abuse.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 2</div>
+        </section>
+
+        <section class="slide" data-slide="9" data-theme="identity">
+          <div class="slide-inner">
+            <div class="label reveal">Digital identity and autonomy</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Avatar theft is social identity theft
+            </h2>
+            <div class="two-col">
+              <ul>
+                <li class="reveal" style="--delay: 240ms">
+                  In VRChat, custom avatars can represent hundreds of hours or
+                  real money.
+                </li>
+                <li class="reveal" style="--delay: 330ms">
+                  Ripping uses modded clients or cache extraction to copy Unity
+                  avatar files.
+                </li>
+                <li class="reveal" style="--delay: 420ms">
+                  Creators self-censor and avoid public worlds when their
+                  digital body can be cloned.
+                </li>
+              </ul>
+              <div class="timeline reveal" style="--delay: 560ms">
+                <div>
+                  <b>01</b><span>Modified client extracts avatar data.</span>
+                </div>
+                <div>
+                  <b>02</b><span>Blueprint ID is bypassed or forged.</span>
+                </div>
+                <div>
+                  <b>03</b
+                  ><span>Avatar is sold, worn, or bundled with malware.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 2</div>
+        </section>
+
+        <section class="slide" data-slide="10" data-theme="danger">
+          <div class="slide-inner">
+            <div class="label reveal">Economic exploitation</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Play becomes work, but without workplace rights
+            </h2>
+            <div class="two-col wide-left">
+              <ul>
+                <li class="reveal" style="--delay: 240ms">
+                  Virtual economies depend on user-generated games, clothing,
+                  worlds, and scripts.
+                </li>
+                <li class="reveal" style="--delay: 330ms">
+                  Platforms control discovery, currency, payout rules, and
+                  dispute channels.
+                </li>
+                <li class="reveal" style="--delay: 420ms">
+                  Minors often lack contracts, HR, bargaining power, or legal
+                  recourse.
+                </li>
+              </ul>
+              <div class="bar-system reveal" style="--delay: 560ms">
+                <div class="stat-value">&gt;80%</div>
+                <p class="stat-copy">
+                  The draft cites Roblox retaining more than 80% of in-game
+                  revenue.
+                </p>
+                <div class="bar-label">
+                  <span>Platform capture</span><span>&gt;80%</span>
+                </div>
+                <div class="bar"><span style="--w: 84%"></span></div>
+                <div class="bar-label">
+                  <span>Creator remainder</span><span>&lt;20%</span>
+                </div>
+                <div class="bar"><span style="--w: 18%"></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 2</div>
+        </section>
+
+        <section class="slide" data-slide="11" data-theme="law">
+          <div class="slide-inner">
+            <div class="chapter-grid">
+              <div class="big-index reveal">III</div>
+              <div>
+                <div class="label reveal">Member 3 / Law and governance</div>
+                <div class="chapter-title reveal wipe" style="--delay: 100ms">
+                  Who governs a world with no borders?
+                </div>
+                <p class="small-lead reveal" style="--delay: 240ms">
+                  Virtual worlds are social spaces, markets, and communities,
+                  but their rules are often written by platforms first and law
+                  second.
+                </p>
+                <div class="chapter-points reveal" style="--delay: 380ms">
+                  <div>
+                    <b>TOS</b
+                    ><span>Private rules replace public accountability.</span>
+                  </div>
+                  <div>
+                    <b>EU law</b
+                    ><span>DSA, DMA, and GDPR raise the floor.</span>
+                  </div>
+                  <div>
+                    <b>Courts</b
+                    ><span>Virtual goods can be treated as real property.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 3</div>
+        </section>
+
+        <section class="slide" data-slide="12" data-theme="law">
+          <div class="slide-inner">
+            <div class="label reveal">The legal vacuum</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Governance by Terms of Service
+            </h2>
+            <p class="small-lead reveal" style="--delay: 210ms">
+              When regulation lags, platform contracts become the constitution
+              of the virtual world. Courts are starting to challenge one-sided
+              governance.
+            </p>
+            <div class="legal-table reveal" style="--delay: 360ms">
+              <div class="head">Governance tool</div>
+              <div class="head">Platform logic</div>
+              <div class="head">Accountability pressure</div>
+              <div>TOS / EULA</div>
+              <div>
+                Users operate as independent entities in a passive
+                infrastructure.
+              </div>
+              <div>
+                Victims of harassment, theft, or exploitation get limited
+                recourse.
+              </div>
+              <div>Bragg v. Linden</div>
+              <div>
+                Second Life promoted virtual property ownership but used a
+                one-sided agreement.
+              </div>
+              <div>Court found mandatory arbitration unconscionable.</div>
+              <div>DSA / DMA / GDPR</div>
+              <div>
+                EU rules demand transparency, risk mitigation, and biometric
+                data protection.
+              </div>
+              <div>Real-time 3D moderation remains difficult to interpret.</div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 3</div>
+        </section>
+
+        <section class="slide" data-slide="13" data-theme="law">
+          <div class="slide-inner">
+            <div class="label reveal">Case Study 01</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Virtual theft meets criminal law
+            </h2>
+            <div class="two-col">
+              <div class="timeline reveal" style="--delay: 240ms">
+                <div>
+                  <b>2007</b
+                  ><span
+                    >Habbo Hotel password phishing leads to theft of EUR 4,000,
+                    roughly USD 5,800, in virtual furniture.</span
+                  >
+                </div>
+                <div>
+                  <b>RuneScape</b
+                  ><span
+                    >Teenagers assault a child to force transfer of a virtual
+                    amulet and mask.</span
+                  >
+                </div>
+                <div>
+                  <b>2012</b
+                  ><span
+                    >Dutch Supreme Court rules virtual items can qualify as
+                    legally stealable goods.</span
+                  >
+                </div>
+              </div>
+              <div class="statline reveal" style="--delay: 520ms">
+                <div class="stat-value">3</div>
+                <p class="stat-copy">
+                  The court emphasized identifiable value, transferability, and
+                  economic worth.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 3</div>
+        </section>
+
+        <section class="slide" data-slide="14" data-theme="law">
+          <div class="slide-inner">
+            <div class="label reveal">Case Study 02</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Second Life's virtual bank run
+            </h2>
+            <div class="two-col wide-left">
+              <div class="timeline reveal" style="--delay: 240ms">
+                <div>
+                  <b>2005</b
+                  ><span
+                    >Ginko Financial launches in Second Life as an unregulated
+                    virtual bank.</span
+                  >
+                </div>
+                <div>
+                  <b>69-100%</b
+                  ><span
+                    >Promised annualized returns were mathematically
+                    unsustainable.</span
+                  >
+                </div>
+                <div>
+                  <b>2007</b
+                  ><span
+                    >Gambling ban collapses Ginko's revenue stream and triggers
+                    a bank run.</span
+                  >
+                </div>
+              </div>
+              <div class="statline reveal" style="--delay: 520ms">
+                <div class="stat-value">~200M L$</div>
+                <p class="stat-copy">
+                  Roughly USD 750,000 in losses, converted into worthless
+                  perpetual bonds.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 3</div>
+        </section>
+
+        <section class="slide" data-slide="15" data-theme="danger">
+          <div class="slide-inner">
+            <div class="chapter-grid">
+              <div class="big-index reveal">IV</div>
+              <div>
+                <div class="label reveal">Member 4 / Cases and safeguards</div>
+                <div class="chapter-title reveal wipe" style="--delay: 100ms">
+                  Platform power has real victims.
+                </div>
+                <p class="small-lead reveal" style="--delay: 240ms">
+                  The final cases show why social virtual worlds need design
+                  obligations, not only user reporting and reactive enforcement.
+                </p>
+                <div class="chapter-points reveal" style="--delay: 380ms">
+                  <div>
+                    <b>Roblox</b><span>Child labor and platform capture.</span>
+                  </div>
+                  <div>
+                    <b>VRChat</b
+                    ><span>Embodiment theft and black markets.</span>
+                  </div>
+                  <div>
+                    <b>Safeguards</b
+                    ><span>Privacy tech, moderation, Zero Trust.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 4</div>
+        </section>
+
+        <section class="slide" data-slide="16" data-theme="danger">
+          <div class="slide-inner">
+            <div class="label reveal">Case Study 03</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Roblox and the child labor economy
+            </h2>
+            <div class="two-col wide-left">
+              <ul>
+                <li class="reveal" style="--delay: 240ms">
+                  The updated draft cites Roblox as having 70M+ daily users and
+                  relying on underage creator labor.
+                </li>
+                <li class="reveal" style="--delay: 330ms">
+                  In 2023, the platform reportedly flagged more than 13,000
+                  child exploitation incidents.
+                </li>
+                <li class="reveal" style="--delay: 420ms">
+                  Predators can use open social features to start contact, then
+                  move conversations to encrypted apps like Discord.
+                </li>
+                <li class="reveal" style="--delay: 510ms">
+                  Financial investigations cited in the draft suggest trust and
+                  safety spending fell 2% year over year.
+                </li>
+              </ul>
+              <div class="evidence-row reveal" style="--delay: 650ms">
+                <div>
+                  <b>70M+</b><span>Daily users cited in the draft.</span>
+                </div>
+                <div>
+                  <b>13,000+</b
+                  ><span>Child exploitation incidents flagged in 2023.</span>
+                </div>
+                <div>
+                  <b>-2%</b
+                  ><span
+                    >Reported year-over-year trust and safety spending
+                    change.</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 4</div>
+        </section>
+
+        <section class="slide" data-slide="17" data-theme="identity">
+          <div class="slide-inner">
+            <div class="label reveal">Case Study 04</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              VRChat and the black market of digital identity
+            </h2>
+            <div class="two-col">
+              <ul>
+                <li class="reveal" style="--delay: 240ms">
+                  A custom avatar is a body, a reputation, and a social signal.
+                </li>
+                <li class="reveal" style="--delay: 330ms">
+                  Ripper forums convert unique digital bodies into files for
+                  resale or impersonation.
+                </li>
+                <li class="reveal" style="--delay: 420ms">
+                  Users retreat from public worlds when identity protection is
+                  technically weak.
+                </li>
+                <li class="reveal" style="--delay: 510ms">
+                  Some rely on third-party mesh scramblers because
+                  platform-level protections remain insufficient.
+                </li>
+              </ul>
+              <div class="statline reveal" style="--delay: 560ms">
+                <div class="stat-value">Body</div>
+                <p class="stat-copy">
+                  The ethical harm is not only copyright theft. It is the theft
+                  of a chosen social presence.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 4</div>
+        </section>
+
+        <section class="slide" data-slide="18" data-theme="safe">
+          <div class="slide-inner">
+            <div class="label reveal">Countermeasures</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Safety has to be designed into the world
+            </h2>
+            <div class="open-cols reveal" style="--delay: 260ms">
+              <div>
+                <span class="num">01</span>
+                <h3>Privacy tech</h3>
+                <span
+                  >Apply k-anonymity, differential privacy, and Fourier
+                  perturbation before biometric data leaves the headset.</span
+                >
+              </div>
+              <div>
+                <span class="num">02</span>
+                <h3>Real-time moderation</h3>
+                <span
+                  >Use federated AI to detect toxic behavior and trigger safety
+                  bubbles within milliseconds.</span
+                >
+              </div>
+              <div>
+                <span class="num">03</span>
+                <h3>Zero Trust</h3>
+                <span
+                  >Continuously authenticate avatars, devices, APIs, biometric
+                  transfers, and in-world transactions.</span
+                >
+              </div>
+              <div>
+                <span class="num">04</span>
+                <h3>Responsible innovation</h3>
+                <span
+                  >Use anticipatory governance, public debate, and
+                  human-centered boundaries before deployment.</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="footer">Presented by: Member 4</div>
+        </section>
+
+        <section class="slide" data-slide="19" data-theme="safe">
+          <div class="slide-inner">
+            <div class="label reveal">Conclusion</div>
+            <h2 class="reveal wipe" style="--delay: 90ms">
+              Reform across three dimensions
+            </h2>
+            <div class="recommendations reveal" style="--delay: 260ms">
+              <div>
+                <b>01</b>
+                <section>
+                  <h3>Jurisprudence</h3>
+                  <p>
+                    Recognize virtual crimes as real crimes, including theft of
+                    property, identity, and psychological safety.
+                  </p>
+                </section>
+              </div>
+              <div>
+                <b>02</b>
+                <section>
+                  <h3>Platform governance</h3>
+                  <p>
+                    End absolute TOS shields and require a duty of care for
+                    platforms that monetize minors and biometric data.
+                  </p>
+                </section>
+              </div>
+              <div>
+                <b>03</b>
+                <section>
+                  <h3>Ethics-by-design</h3>
+                  <p>
+                    Integrate bioethicists, psychologists, labor advocates,
+                    legal scholars, and end-users before harm becomes
+                    infrastructure.
+                  </p>
+                </section>
+              </div>
+            </div>
+            <p class="closing reveal" style="--delay: 560ms">
+              The future of online virtual worlds is a policy choice, not a
+              technical inevitability.
+            </p>
+          </div>
+          <div class="footer">Presented by: Member 4</div>
+        </section>
+
+        <section
+          class="slide thank-slide"
+          data-slide="20"
+          data-theme="safe"
+          data-finale="true"
+        >
+          <div class="slide-inner">
+            <div class="label reveal">Discussion</div>
+            <div class="thank-you reveal wipe" style="--delay: 90ms">
+              Thank you
+            </div>
+            <p class="thank-copy reveal" style="--delay: 260ms">
+              Questions, challenges, and reflections
+            </p>
+            <div class="thank-meta reveal" style="--delay: 420ms">
+              <span>Munim Ahmad</span>
+              <span>Fizza Shahid</span>
+              <span>Harram Imran</span>
+              <span>Kamran Saleem</span>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (() => {
+        const slides = Array.from(document.querySelectorAll('.slide'));
+        const counter = document.getElementById('counter');
+        const counterWrap = counter.parentElement;
+        const prev = document.getElementById('prev');
+        const next = document.getElementById('next');
+        const progress = document.getElementById('progress');
+        const root = document.documentElement;
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let index = 0;
+        let pointer = { x: 0, y: 0 };
+        let finaleEnteredAt = null;
+
+        const themes = {
+          intro: ['#46e3ff', '#ffd166'],
+          identity: ['#a78bfa', '#46e3ff'],
+          danger: ['#ff5a7a', '#ffd166'],
+          law: ['#ffd166', '#46e3ff'],
+          safe: ['#89f7b0', '#46e3ff'],
+        };
+
+        root.style.setProperty('--slide-count', slides.length);
+
+        for (let i = 0; i < slides.length; i += 1) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.setAttribute('aria-label', `Go to slide ${i + 1}`);
+          button.addEventListener('click', () => goTo(i));
+          progress.appendChild(button);
+        }
+
+        function pad(value) {
+          return String(value).padStart(2, '0');
+        }
+
+        function setTheme(slide) {
+          const [accent, accent2] = themes[slide.dataset.theme] || themes.intro;
+          root.style.setProperty('--accent', accent);
+          root.style.setProperty('--accent-2', accent2);
+        }
+
+        function restart(slide) {
+          slide.querySelectorAll('.reveal, .bar span').forEach((el) => {
+            el.style.animation = 'none';
+            void el.offsetHeight;
+            el.style.animation = '';
+          });
+        }
+
+        function updateChrome() {
+          counter.textContent = `${pad(index + 1)} / ${pad(slides.length)}`;
+          counterWrap.classList.remove('flip');
+          void counterWrap.offsetHeight;
+          counterWrap.classList.add('flip');
+          Array.from(progress.children).forEach((button, i) => {
+            button.classList.toggle('done', i < index);
+            button.classList.toggle('active', i === index);
+          });
+          prev.disabled = index === 0;
+          next.disabled = index === slides.length - 1;
+          document.body.dataset.finale =
+            index === slides.length - 1 ? 'true' : 'false';
+        }
+
+        function goTo(nextIndex) {
+          if (
+            nextIndex < 0 ||
+            nextIndex >= slides.length ||
+            nextIndex === index
+          )
+            return;
+          const oldSlide = slides[index];
+          const newSlide = slides[nextIndex];
+          oldSlide.classList.remove('active', 'reverse-start');
+          oldSlide.classList.add('exiting');
+          setTimeout(() => oldSlide.classList.remove('exiting'), 280);
+          newSlide.classList.toggle('reverse-start', nextIndex < index);
+          restart(newSlide);
+          newSlide.classList.add('active');
+          index = nextIndex;
+          finaleEnteredAt =
+            index === slides.length - 1 ? performance.now() : null;
+          setTheme(newSlide);
+          updateChrome();
+          if (reduced.matches) drawThread(performance.now());
+        }
+
+        document.addEventListener('keydown', (event) => {
+          if (
+            event.key === 'ArrowRight' ||
+            event.key === 'PageDown' ||
+            event.key === ' '
+          )
+            goTo(index + 1);
+          if (event.key === 'ArrowLeft' || event.key === 'PageUp')
+            goTo(index - 1);
+        });
+
+        prev.addEventListener('click', () => goTo(index - 1));
+        next.addEventListener('click', () => goTo(index + 1));
+
+        let touchStart = 0;
+        document.addEventListener(
+          'touchstart',
+          (event) => {
+            touchStart = event.changedTouches[0].clientX;
+          },
+          { passive: true },
+        );
+
+        document.addEventListener(
+          'touchend',
+          (event) => {
+            const delta = event.changedTouches[0].clientX - touchStart;
+            if (Math.abs(delta) > 48) goTo(index + (delta < 0 ? 1 : -1));
+          },
+          { passive: true },
+        );
+
+        document.addEventListener('pointermove', (event) => {
+          pointer = {
+            x: (event.clientX / window.innerWidth - 0.5) * 2,
+            y: (event.clientY / window.innerHeight - 0.5) * 2,
+          };
+        });
+
+        setTheme(slides[0]);
+        updateChrome();
+
+        const canvas = document.getElementById('threadCanvas');
+        const ctx = canvas.getContext('2d');
+        let width = 0;
+        let height = 0;
+        let dpr = 1;
+        let raf = null;
+
+        function colorToRgb(color) {
+          const temp = document.createElement('div');
+          temp.style.color = color;
+          document.body.appendChild(temp);
+          const rgb = getComputedStyle(temp).color.match(/\d+/g).map(Number);
+          temp.remove();
+          return rgb;
+        }
+
+        function accentRgb(which) {
+          return colorToRgb(
+            getComputedStyle(root).getPropertyValue(which).trim(),
+          );
+        }
+
+        function rgba(rgb, alpha) {
+          return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+        }
+
+        function resize() {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          width = window.innerWidth;
+          height = window.innerHeight;
+          canvas.width = Math.floor(width * dpr);
+          canvas.height = Math.floor(height * dpr);
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function pointAt(t) {
+          const x = width * (0.08 + t * 0.84);
+          const wave = Math.sin(t * Math.PI * 2.2 - 0.6) * height * 0.026;
+          const y = height * (0.86 - t * 0.11) + wave;
+          return { x, y };
+        }
+
+        function lerp(a, b, amount) {
+          return a + (b - a) * amount;
+        }
+
+        function easeOutCubic(value) {
+          return 1 - Math.pow(1 - value, 3);
+        }
+
+        function easeInOutCubic(value) {
+          return value < 0.5
+            ? 4 * value * value * value
+            : 1 - Math.pow(-2 * value + 2, 3) / 2;
+        }
+
+        function clamp01(value) {
+          return Math.min(1, Math.max(0, value));
+        }
+
+        function sourcePoint(t) {
+          const p = pointAt(t);
+          return {
+            x: p.x + pointer.x * 10,
+            y: p.y + pointer.y * 8,
+          };
+        }
+
+        function finaleCenter() {
+          return {
+            cx: width * 0.5 + pointer.x * 8,
+            cy: height * 0.47 + pointer.y * 6,
+            radius: Math.min(width, height) * 0.255,
+          };
+        }
+
+        function finaleGeometry() {
+          const center = finaleCenter();
+          const end = sourcePoint(1);
+          const startAngle = Math.atan2(end.y - center.cy, end.x - center.cx);
+          return { ...center, end, startAngle };
+        }
+
+        function finalePoint(t, time, wobbleAmount = 1) {
+          const { cx, cy, radius, startAngle } = finaleGeometry();
+          const angle = startAngle + t * Math.PI * 2;
+          const wobble =
+            Math.sin(angle * 3 + time / 520) * 0.018 +
+            Math.sin(angle * 5 - time / 860) * 0.011 +
+            Math.sin(angle * 8 + time / 1240) * 0.006;
+          const breath = Math.sin(time / 760) * 0.012;
+          const r = radius * (1 + wobble + breath);
+          return {
+            x: cx + Math.cos(angle) * (radius + (r - radius) * wobbleAmount),
+            y: cy + Math.sin(angle) * (radius + (r - radius) * wobbleAmount),
+          };
+        }
+
+        function cubicPoint(t, a, b, c, d) {
+          const mt = 1 - t;
+          return {
+            x:
+              mt * mt * mt * a.x +
+              3 * mt * mt * t * b.x +
+              3 * mt * t * t * c.x +
+              t * t * t * d.x,
+            y:
+              mt * mt * mt * a.y +
+              3 * mt * mt * t * b.y +
+              3 * mt * t * t * c.y +
+              t * t * t * d.y,
+          };
+        }
+
+        function finaleConnectorPoint(t, time) {
+          const geometry = finaleGeometry();
+          const start = geometry.end;
+          const end = finalePoint(0, time, 0);
+          const tangent = {
+            x: -Math.sin(geometry.startAngle),
+            y: Math.cos(geometry.startAngle),
+          };
+          const controlA = {
+            x: lerp(start.x, end.x, 0.28),
+            y: start.y - height * 0.035,
+          };
+          const controlB = {
+            x: end.x - tangent.x * geometry.radius * 0.34,
+            y: end.y - tangent.y * geometry.radius * 0.34,
+          };
+          return cubicPoint(easeInOutCubic(t), start, controlA, controlB, end);
+        }
+
+        function finaleRoutePoint(t, time, wobbleAmount) {
+          const connectorPortion = 0.17;
+          if (t < connectorPortion) {
+            return finaleConnectorPoint(t / connectorPortion, time);
+          }
+          return finalePoint(
+            (t - connectorPortion) / (1 - connectorPortion),
+            time,
+            wobbleAmount,
+          );
+        }
+
+        function drawFinaleGlow(time, rgbA, rgbB, amount) {
+          if (amount <= 0) return;
+          const { cx, cy, radius } = finaleCenter();
+          const pulse = 1 + Math.sin(time / 720) * 0.026;
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+
+          const glow = ctx.createRadialGradient(
+            cx,
+            cy,
+            radius * 0.06,
+            cx,
+            cy,
+            radius * 1.55 * pulse,
+          );
+          glow.addColorStop(0, rgba(rgbA, 0.2 * amount));
+          glow.addColorStop(0.34, rgba(rgbB, 0.12 * amount));
+          glow.addColorStop(0.72, rgba(rgbA, 0.045 * amount));
+          glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius * 1.58 * pulse, 0, Math.PI * 2);
+          ctx.fill();
+
+          for (let ring = 0; ring < 3; ring += 1) {
+            const drift = time / (760 + ring * 180);
+            ctx.beginPath();
+            for (let i = 0; i <= 180; i += 1) {
+              const t = i / 180;
+              const angle = finaleGeometry().startAngle + t * Math.PI * 2;
+              const ripple =
+                Math.sin(angle * (3 + ring) + drift) * 0.016 +
+                Math.sin(angle * (6 + ring) - drift * 0.78) * 0.008;
+              const r = radius * (1 + ring * 0.145 + ripple);
+              const x = cx + Math.cos(angle) * r;
+              const y = cy + Math.sin(angle) * r;
+              i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = rgba(
+              ring % 2 ? rgbB : rgbA,
+              (0.12 - ring * 0.024) * amount,
+            );
+            ctx.lineWidth = 1.8 + ring * 0.7;
+            ctx.shadowBlur = 16;
+            ctx.shadowColor = rgba(ring % 2 ? rgbB : rgbA, 0.22 * amount);
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        }
+
+        function drawFinaleArtifacts(time, rgbA, rgbB, amount) {
+          if (amount <= 0.02) return;
+          const { cx, cy, radius } = finaleCenter();
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          for (let i = 0; i < 26; i += 1) {
+            const travel = (time / (1180 + i * 31) + i * 0.127) % 1;
+            const angle =
+              (i / 26) * Math.PI * 2 +
+              Math.sin(i * 1.7) * 0.12 +
+              time / (2200 + i * 47);
+            const distance = radius * (1.04 + travel * 0.52);
+            const x = cx + Math.cos(angle) * distance;
+            const y = cy + Math.sin(angle) * distance;
+            const alpha = Math.pow(1 - travel, 1.75) * 0.28 * amount;
+            const color = i % 2 ? rgbA : rgbB;
+            const size = 1.3 + (i % 5) * 0.42;
+            ctx.fillStyle = rgba(color, alpha);
+            ctx.strokeStyle = rgba(color, alpha * 0.75);
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            if (i % 4 === 0) {
+              const dx = Math.cos(angle) * size * 2.8;
+              const dy = Math.sin(angle) * size * 2.8;
+              ctx.moveTo(x - dx, y - dy);
+              ctx.lineTo(x + dx, y + dy);
+              ctx.stroke();
+            } else {
+              ctx.arc(x, y, size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+        }
+
+        function drawThread(time) {
+          const rgbA = accentRgb('--accent');
+          const rgbB = accentRgb('--accent-2');
+          const total = slides.length - 1;
+          const isFinale = index === total;
+          const finaleAge =
+            isFinale && finaleEnteredAt
+              ? Math.max(0, time - finaleEnteredAt)
+              : 0;
+          const train = isFinale
+            ? reduced.matches
+              ? 1
+              : easeInOutCubic(clamp01(finaleAge / 1650))
+            : 0;
+          const settle = isFinale
+            ? reduced.matches
+              ? 1
+              : easeOutCubic(clamp01((finaleAge - 1260) / 880))
+            : 0;
+          const wobble = settle * 0.72;
+          const progressValue = total === 0 ? 0 : index / total;
+          const pulse = (time / 1000) % 1;
+          ctx.clearRect(0, 0, width, height);
+
+          const samples = 160;
+          const pts = [];
+          for (let i = 0; i <= samples; i += 1) {
+            pts.push(sourcePoint(i / samples));
+          }
+
+          if (isFinale) {
+            const routeAlpha = train < 1 ? 1 : 1 - settle;
+            const oldAlpha = 1 - train;
+            drawFinaleGlow(time, rgbA, rgbB, Math.max(settle, train * 0.34));
+
+            if (oldAlpha > 0.02) {
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+              ctx.globalAlpha = oldAlpha;
+              ctx.beginPath();
+              pts.forEach((p, i) => {
+                i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+              });
+              ctx.strokeStyle = 'rgba(251, 250, 244, 0.08)';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+
+              ctx.beginPath();
+              pts.forEach((p, i) => {
+                i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+              });
+              const oldGradient = ctx.createLinearGradient(
+                width * 0.08,
+                0,
+                width * 0.92,
+                0,
+              );
+              oldGradient.addColorStop(0, rgba(rgbA, 0.72));
+              oldGradient.addColorStop(1, rgba(rgbB, 0.88));
+              ctx.strokeStyle = oldGradient;
+              ctx.lineWidth = 3;
+              ctx.shadowBlur = 12;
+              ctx.shadowColor = rgba(rgbA, 0.34);
+              ctx.stroke();
+              ctx.shadowBlur = 0;
+              ctx.globalAlpha = 1;
+            }
+
+            if (routeAlpha > 0.02) {
+              const routeSamples = 220;
+              const routeSteps = Math.max(
+                2,
+                Math.floor(routeSamples * Math.max(train, 0.012)),
+              );
+              ctx.save();
+              ctx.globalAlpha = routeAlpha;
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+              ctx.beginPath();
+              for (let i = 0; i <= routeSteps; i += 1) {
+                const p = finaleRoutePoint(
+                  train * (i / routeSteps),
+                  time,
+                  Math.min(wobble, 0.25),
+                );
+                i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+              }
+              const routeGradient = ctx.createLinearGradient(
+                width * 0.28,
+                height * 0.24,
+                width * 0.74,
+                height * 0.72,
+              );
+              routeGradient.addColorStop(0, rgba(rgbA, 0.82));
+              routeGradient.addColorStop(1, rgba(rgbB, 0.96));
+              ctx.strokeStyle = routeGradient;
+              ctx.lineWidth = 3.4;
+              ctx.shadowBlur = 18;
+              ctx.shadowColor = rgba(rgbA, 0.42);
+              ctx.stroke();
+              ctx.restore();
+            }
+
+            if (settle > 0.02) {
+              ctx.save();
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+              ctx.beginPath();
+              for (let i = 0; i <= 220; i += 1) {
+                const p = finalePoint(i / 220, time, wobble);
+                i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+              }
+              ctx.closePath();
+              const circleGradient = ctx.createLinearGradient(
+                width * 0.3,
+                height * 0.25,
+                width * 0.7,
+                height * 0.72,
+              );
+              circleGradient.addColorStop(0, rgba(rgbA, 0.74 * settle));
+              circleGradient.addColorStop(1, rgba(rgbB, 0.9 * settle));
+              ctx.strokeStyle = circleGradient;
+              ctx.lineWidth = 3.1;
+              ctx.shadowBlur = 16;
+              ctx.shadowColor = rgba(rgbA, 0.34 * settle);
+              ctx.stroke();
+              ctx.shadowBlur = 0;
+
+              for (let i = 0; i < slides.length; i += 1) {
+                const p = finalePoint(i / slides.length, time, wobble);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2.1, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(i % 2 ? rgbA : rgbB, 0.16 * settle);
+                ctx.fill();
+              }
+              ctx.restore();
+            }
+
+            drawFinaleArtifacts(time, rgbA, rgbB, settle * 0.8);
+
+            const head =
+              train < 1
+                ? finaleRoutePoint(train, time, Math.min(wobble, 0.25))
+                : finalePoint(pulse, time, wobble);
+            ctx.beginPath();
+            ctx.arc(head.x, head.y, train < 1 ? 5.2 : 3.7, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(rgbB, train < 1 ? 0.78 : 0.55);
+            ctx.shadowBlur = train < 1 ? 18 : 10;
+            ctx.shadowColor = rgba(rgbB, 0.36);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            if (!reduced.matches) raf = requestAnimationFrame(drawThread);
+            return;
+          }
+
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          pts.forEach((p, i) => {
+            i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+          });
+          ctx.strokeStyle = 'rgba(251, 250, 244, 0.08)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.beginPath();
+          for (let i = 0; i <= Math.floor(samples * progressValue); i += 1) {
+            const p = pts[i];
+            i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+          }
+          const gradient = ctx.createLinearGradient(
+            width * 0.08,
+            0,
+            width * 0.92,
+            0,
+          );
+          gradient.addColorStop(0, rgba(rgbA, 0.85));
+          gradient.addColorStop(1, rgba(rgbB, 0.95));
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 3;
+          ctx.shadowBlur = 14;
+          ctx.shadowColor = rgba(rgbA, 0.42);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          for (let i = 0; i < slides.length; i += 1) {
+            const t = i / (slides.length - 1);
+            const p = sourcePoint(t);
+            const active = i === index;
+            const past = i <= index;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, active ? 6 : 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = past
+              ? rgba(rgbA, active ? 0.78 : 0.42)
+              : 'rgba(251, 250, 244, 0.16)';
+            ctx.fill();
+            if (active) {
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, 12 + Math.sin(time / 260) * 3, 0, Math.PI * 2);
+              ctx.strokeStyle = rgba(rgbB, 0.32);
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            }
+          }
+
+          const pulseT = Math.min(1, progressValue + pulse * 0.08);
+          const p = sourcePoint(pulseT);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 3.4, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(rgbB, 0.62);
+          ctx.fill();
+
+          if (!reduced.matches) raf = requestAnimationFrame(drawThread);
+        }
+
+        function startCanvas() {
+          resize();
+          cancelAnimationFrame(raf);
+          if (reduced.matches) {
+            drawThread(0);
+            return;
+          }
+          raf = requestAnimationFrame(drawThread);
+        }
+
+        window.addEventListener('resize', startCanvas);
+        reduced.addEventListener('change', startCanvas);
+        startCanvas();
+
+        window.deckNavigation = {
+          next: () => goTo(index + 1),
+          prev: () => goTo(index - 1),
+          goTo: (slideNumber) => goTo(slideNumber - 1),
+          get current() {
+            return index + 1;
+          },
+        };
+      })();
+    </script>
+  </body>
+</html>
